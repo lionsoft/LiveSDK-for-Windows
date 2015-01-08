@@ -199,6 +199,11 @@ namespace Microsoft.Live
             return this.authClient.GetLoginUrl(scopes, redirectUrl, display, theme, locale, state);
         }
 
+        public string RedirectUrl
+        {
+            get { return LiveAuthUtility.BuildDesktopRedirectUrl(); }
+        }
+
         /// <summary>
         /// Gets the logout URL.
         /// </summary>

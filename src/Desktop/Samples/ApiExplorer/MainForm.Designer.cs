@@ -50,6 +50,7 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.signinButton = new System.Windows.Forms.Button();
             this.signOutWebBrowser = new System.Windows.Forms.WebBrowser();
             this.mePictureBox = new System.Windows.Forms.PictureBox();
@@ -71,6 +72,8 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
             this.connectGroupBox = new System.Windows.Forms.GroupBox();
             this.clearOutputButton = new System.Windows.Forms.Button();
             this.outputTextBox = new System.Windows.Forms.TextBox();
+            this.button1 = new System.Windows.Forms.Button();
+            this.textToken = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.mePictureBox)).BeginInit();
             this.groupBox1.SuspendLayout();
             this.connectGroupBox.SuspendLayout();
@@ -168,7 +171,7 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
             // signOutButton
             // 
             this.signOutButton.Enabled = false;
-            this.signOutButton.Location = new System.Drawing.Point(247, 51);
+            this.signOutButton.Location = new System.Drawing.Point(247, 120);
             this.signOutButton.Name = "signOutButton";
             this.signOutButton.Size = new System.Drawing.Size(108, 23);
             this.signOutButton.TabIndex = 7;
@@ -313,11 +316,33 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
             this.outputTextBox.Size = new System.Drawing.Size(570, 209);
             this.outputTextBox.TabIndex = 4;
             // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(506, 120);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(167, 23);
+            this.button1.TabIndex = 19;
+            this.button1.Text = "Sign in with Token";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
+            // textToken
+            // 
+            this.textToken.Location = new System.Drawing.Point(505, 22);
+            this.textToken.Multiline = true;
+            this.textToken.Name = "textToken";
+            this.textToken.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.textToken.Size = new System.Drawing.Size(168, 90);
+            this.textToken.TabIndex = 20;
+            this.textToken.Text = resources.GetString("textToken.Text");
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(685, 555);
+            this.Controls.Add(this.textToken);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.connectGroupBox);
             this.Controls.Add(this.signOutButton);
             this.Controls.Add(this.groupBox1);
@@ -327,13 +352,13 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
             this.Name = "MainForm";
             this.Text = "Live Connect API Explorer";
             this.Load += new System.EventHandler(this.MainForm_Load);
-            this.ClientSizeChanged += new System.EventHandler(this.MainForm_ClientSizeChange);
             ((System.ComponentModel.ISupportInitialize)(this.mePictureBox)).EndInit();
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             this.connectGroupBox.ResumeLayout(false);
             this.connectGroupBox.PerformLayout();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -360,6 +385,8 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
         private System.Windows.Forms.TextBox outputTextBox;
         private System.Windows.Forms.Button clearOutputButton;
         private System.Windows.Forms.TextBox currentScopeTextBox;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.TextBox textToken;
     }
 }
 

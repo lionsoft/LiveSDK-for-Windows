@@ -20,26 +20,35 @@
 //  THE SOFTWARE.
 // ------------------------------------------------------------------------------
 
-using LiveConnectDesktopSample;
-
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Live;
+
+using System.Runtime.InteropServices;
+
 
 namespace Microsoft.Live.Desktop.Samples.ApiExplorer
 {
-
     public partial class MainForm : Form, IRefreshTokenHandler
     {
         // Update the ClientID with your app client Id that you created from https://account.live.com/developers/applications.
-        private const string ClientID = "0000000048122D4E";
+        
+        private const string ClientID = "000000004C1338B6";
+//        private const string ClientID = "000000004C133E94";
+
         private LiveAuthForm authForm;
         private LiveAuthClient liveAuthClient;
-        private LiveConnectClient liveConnectClient;
+        private LiveConnectClient _liveConnectClient;
         private RefreshTokenInfo refreshTokenInfo;
 
         public MainForm()
@@ -77,7 +86,41 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
                     this.liveAuthClient.PropertyChanged += this.liveAuthClient_PropertyChanged;
                 }
 
-                this.liveConnectClient = null;
+                this.LiveConnectClient = null;
+            }
+        }
+
+        private async void AssignLiveConnectClient()
+        {
+            try
+            {
+                if (LiveConnectClient != null)
+                {
+                    LiveOperationResult meRs = await LiveConnectClient.GetAsync("me");
+                    dynamic meData = meRs.Result;
+                    this.meNameLabel.Text = meData.name;
+
+                    LiveDownloadOperationResult meImgResult = await LiveConnectClient.DownloadAsync("me/picture");
+                    this.mePictureBox.Image = Image.FromStream(meImgResult.Stream);
+                }
+                UpdateUIElements();
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message, @"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private LiveConnectClient LiveConnectClient
+        {
+            get
+            {
+                return _liveConnectClient;
+            }
+            set
+            {
+                _liveConnectClient = value;
+                AssignLiveConnectClient();
             }
         }
 
@@ -99,8 +142,9 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
 
         private void UpdateUIElements()
         {
-            LiveConnectSession session = this.AuthSession;
+            LiveConnectSession session = this.AuthSession ?? (LiveConnectClient == null ? null : LiveConnectClient.Session);
             bool isSignedIn = session != null;
+            
             this.signOutButton.Enabled = isSignedIn;
             this.connectGroupBox.Enabled = isSignedIn;
             this.currentScopeTextBox.Text = isSignedIn ? string.Join(" ", session.Scopes) : string.Empty;
@@ -111,12 +155,12 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
             }
         }
 
-        private void SigninButton_Click(object sender, EventArgs e)
+        private async void SigninButton_Click(object sender, EventArgs e)
         {
             if (this.authForm == null)
             {
                 string startUrl = this.AuthClient.GetLoginUrl(this.GetAuthScopes());
-                string endUrl = "https://login.live.com/oauth20_desktop.srf";
+                var endUrl = this.AuthClient.RedirectUrl;
                 this.authForm = new LiveAuthForm(
                     startUrl,
                     endUrl,
@@ -124,6 +168,10 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
                 this.authForm.FormClosed += AuthForm_FormClosed;
                 this.authForm.ShowDialog(this);
             }
+        }
+        private void button1_Click(object sender, EventArgs e)
+        {
+            this.LiveConnectClient = new LiveConnectClient(textToken.Text);
         }
 
         private string[] GetAuthScopes()
@@ -149,7 +197,7 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
 
         private void LogOutput(string text)
         {
-            this.outputTextBox.Text += text + Environment.NewLine;
+            this.outputTextBox.Text += text + "\r\n";
         }
 
         private async void OnAuthCompleted(AuthResult result)
@@ -160,13 +208,15 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
                 try
                 {
                     LiveConnectSession session = await this.AuthClient.ExchangeAuthCodeAsync(result.AuthorizeCode);
-                    this.liveConnectClient = new LiveConnectClient(session);
+                    this.LiveConnectClient = new LiveConnectClient(session);
+/*
                     LiveOperationResult meRs = await this.liveConnectClient.GetAsync("me");
                     dynamic meData = meRs.Result;
                     this.meNameLabel.Text = meData.name;
 
                     LiveDownloadOperationResult meImgResult = await this.liveConnectClient.DownloadAsync("me/picture");
                     this.mePictureBox.Image = Image.FromStream(meImgResult.Stream);
+*/
                 }
                 catch (LiveAuthException aex)
                 {
@@ -214,24 +264,26 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
                 switch (this.methodComboBox.Text)
                 {
                     case "GET":
-                        result = await this.liveConnectClient.GetAsync(this.pathTextBox.Text);
+                        result = await this.LiveConnectClient.GetAsync(this.pathTextBox.Text);
                         break;
                     case "PUT":
-                        result = await this.liveConnectClient.PutAsync(this.pathTextBox.Text, this.requestBodyTextBox.Text);
+                        result = await this.LiveConnectClient.PutAsync(this.pathTextBox.Text, this.requestBodyTextBox.Text);
                         break;
                     case "POST":
-                        result = await this.liveConnectClient.PostAsync(this.pathTextBox.Text, this.requestBodyTextBox.Text);
+                        result = await this.LiveConnectClient.PostAsync(this.pathTextBox.Text, this.requestBodyTextBox.Text);
                         break;
                     case "DELETE":
-                        result = await this.liveConnectClient.DeleteAsync(this.pathTextBox.Text);
+                        result = await this.LiveConnectClient.DeleteAsync(this.pathTextBox.Text);
                         break;
                     case "MOVE":
-                        result = await this.liveConnectClient.MoveAsync(this.pathTextBox.Text, this.destPathTextBox.Text);
+                        result = await this.LiveConnectClient.MoveAsync(this.pathTextBox.Text, this.destPathTextBox.Text);
                         break;
                     case "COPY":
-                        result = await this.liveConnectClient.CopyAsync(this.pathTextBox.Text, this.destPathTextBox.Text);
+                        result = await this.LiveConnectClient.CopyAsync(this.pathTextBox.Text, this.destPathTextBox.Text);
                         break;
                     case "UPLOAD":
+                        var x = await GetSkyDriveFolderID("Документы");
+                        this.pathTextBox.Text = x;
                         result = await this.UploadFile(this.pathTextBox.Text);
                         break;
                     case "DOWNLOAD":
@@ -242,9 +294,7 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
 
                 if (result != null)
                 {
-                    this.LogOutput(this.methodComboBox.Text + "\t" + this.pathTextBox.Text);
-                    this.LogOutput(JsonHelper.FormatJson(result.RawResult));
-                    this.LogOutput(string.Empty);
+                    this.LogOutput(result.RawResult);
                 }
             }
             catch (Exception ex)
@@ -252,7 +302,24 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
                 this.LogOutput("Received an error. " + ex.Message);
             }
         }
+        private async Task<string> GetSkyDriveFolderID(string folderName)
+        {
+            var client = LiveConnectClient;
 
+            LiveOperationResult operationResult = await client.GetAsync("me/skydrive/files?filter=folders");
+            var iEnum = operationResult.Result.Values.GetEnumerator();
+            iEnum.MoveNext();
+            var folders = iEnum.Current as IEnumerable;
+
+            foreach (dynamic v in folders)
+            {
+                if (v.name == folderName)
+                {
+                    return v.id as string;
+                }
+            }
+            return null;
+        }
         private async Task<LiveOperationResult> UploadFile(string path)
         {
             OpenFileDialog dialog = new OpenFileDialog();
@@ -272,7 +339,7 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
 
                 using (stream)
                 {
-                    return await this.liveConnectClient.UploadAsync(path, dialog.SafeFileName, stream, OverwriteOption.DoNotOverwrite);
+                    return await this.LiveConnectClient.UploadAsync(path, dialog.SafeFileName, stream, OverwriteOption.DoNotOverwrite);
                 }
             }
             catch (Exception ex)
@@ -300,7 +367,7 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
 
                 using (stream)
                 {
-                    LiveDownloadOperationResult result = await this.liveConnectClient.DownloadAsync(path);
+                    LiveDownloadOperationResult result = await this.LiveConnectClient.DownloadAsync(path);
                     if (result.Stream != null)
                     {
                         using (result.Stream)
@@ -319,33 +386,19 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
         private async void MainForm_Load(object sender, EventArgs e)
         {
             this.methodComboBox.SelectedIndex = 0;
-            this.scopeListBox.SelectedIndex = 0;
 
             try
             {
                 LiveLoginResult loginResult = await this.AuthClient.InitializeAsync();
                 if (loginResult.Session != null)
                 {
-                    this.liveConnectClient = new LiveConnectClient(loginResult.Session);
+                    this.LiveConnectClient = new LiveConnectClient(loginResult.Session);
                 }
             }
             catch (Exception ex)
             {
                 this.LogOutput("Received an error during initializing. " + ex.Message);
             }
-        }
-        private void MainForm_ClientSizeChange(object sender, EventArgs e)
-        {
-            this.connectGroupBox.SetBounds(
-                this.connectGroupBox.Bounds.X,
-                this.connectGroupBox.Bounds.Y,
-                Width - 43 > 0 ? Width - 43 : 658,
-                Height - 200 > 0 ? Height - 200 : 394);
-            this.outputTextBox.SetBounds(
-                this.outputTextBox.Bounds.X,
-                this.outputTextBox.Bounds.Y,
-                Width - 131 > 0 ? Width - 131 : 570,
-                Height - 388 > 0 ? Height - 388 : 209);
         }
 
         Task IRefreshTokenHandler.SaveRefreshTokenAsync(RefreshTokenInfo tokenInfo)
@@ -366,5 +419,6 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
                 return this.refreshTokenInfo;
             });
         }
+
     }
 }

@@ -69,6 +69,20 @@ namespace Microsoft.Live
 #endif
         }
 
+
+        /// <summary>
+        /// Creates a new LiveConnectClient instance.
+        /// </summary>
+        /// <param name="accessToken">Access token</param>
+        public LiveConnectClient(string accessToken)
+            : this(new LiveConnectSession
+            {
+                AccessToken = accessToken, 
+                Scopes = new string[0],
+            })
+        {
+        }
+
         #endregion
 
         #region Properties

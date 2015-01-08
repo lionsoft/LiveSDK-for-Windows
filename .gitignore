@@ -40,3 +40,5 @@ src/WinStore/Samples/Windows/HTML/PhotoSky/PhotoSkyJavaScript/bin/
 src/WinStore/Samples/Windows/HTML/PhotoSky/PhotoSkyJavaScript/bld/
 src/WinStore/Samples/Windows/XAML/PhotoSky/PhotoSkyCSharp/bin/
 src/WinStore/Samples/Windows/XAML/PhotoSky/PhotoSkyCSharp/obj/
+/src/Desktop/UnitTests/bin/Debug/*.dll
+/src/Desktop/UnitTests/bin/Debug/*.pdb
