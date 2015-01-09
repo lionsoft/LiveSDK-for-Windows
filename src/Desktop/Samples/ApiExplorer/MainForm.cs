@@ -21,8 +21,6 @@
 // ------------------------------------------------------------------------------
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
@@ -39,17 +37,21 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Live.Desktop.Samples.ApiExplorer
 {
-    public partial class MainForm : Form, IRefreshTokenHandler
+    public partial class MainForm : Form//, IRefreshTokenHandler
     {
         // Update the ClientID with your app client Id that you created from https://account.live.com/developers/applications.
         
         private const string ClientID = "000000004C1338B6";
+        private const string ClientSecret = "77X2kYOiGjfcBk2eNUvtUd5Dxnl4YcPw";
+
 //        private const string ClientID = "000000004C133E94";
+//        private const string ClientSecret = null;
 
         private LiveAuthForm authForm;
         private LiveAuthClient liveAuthClient;
         private LiveConnectClient _liveConnectClient;
-        private RefreshTokenInfo refreshTokenInfo;
+        private SkyDriveClient _skyDriveClientClient;
+//        private RefreshTokenInfo refreshTokenInfo;
 
         public MainForm()
         {
@@ -67,7 +69,7 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
             {
                 if (this.liveAuthClient == null)
                 {
-                    this.AuthClient = new LiveAuthClient(ClientID, this);
+                    this.AuthClient = new LiveAuthClient(ClientID, ClientSecret);
                 }
 
                 return this.liveAuthClient;
@@ -119,8 +121,17 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
             }
             set
             {
+                if (_liveConnectClient == value) return;
                 _liveConnectClient = value;
+                _skyDriveClientClient = null;
                 AssignLiveConnectClient();
+            }
+        }
+        private SkyDriveClient SkyDriveClient
+        {
+            get
+            {
+                return LiveConnectClient == null ? null : (_skyDriveClientClient ?? (_skyDriveClientClient = new SkyDriveClient(LiveConnectClient)));
             }
         }
 
@@ -147,7 +158,7 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
             
             this.signOutButton.Enabled = isSignedIn;
             this.connectGroupBox.Enabled = isSignedIn;
-            this.currentScopeTextBox.Text = isSignedIn ? string.Join(" ", session.Scopes) : string.Empty;
+            this.currentScopeTextBox.Text = isSignedIn ? string.Join(" ", session.Scopes ?? new string[0]) : string.Empty;
             if (!isSignedIn)
             {
                 this.meNameLabel.Text = string.Empty;
@@ -171,7 +182,8 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
         }
         private void button1_Click(object sender, EventArgs e)
         {
-            this.LiveConnectClient = new LiveConnectClient(textToken.Text);
+            AuthClient = new LiveAuthClient(textToken.Text, ClientID, ClientSecret);
+            LiveConnectClient = new LiveConnectClient(AuthClient);
         }
 
         private string[] GetAuthScopes()
@@ -252,7 +264,7 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
 
         private async void ExecuteButton_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(this.pathTextBox.Text))
+            if (string.IsNullOrWhiteSpace(this.pathTextBox.Text) && this.methodComboBox.Text != @"UPLOAD")
             {
                 this.LogOutput("Path cannot be empty.");
                 return;
@@ -282,8 +294,11 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
                         result = await this.LiveConnectClient.CopyAsync(this.pathTextBox.Text, this.destPathTextBox.Text);
                         break;
                     case "UPLOAD":
-                        var x = await GetSkyDriveFolderID("Документы");
-                        this.pathTextBox.Text = x;
+                        if (string.IsNullOrWhiteSpace(this.pathTextBox.Text))
+                        {
+                            var root = SkyDriveClient.RootFolder;
+                            this.pathTextBox.Text = root.Id;
+                        }
                         result = await this.UploadFile(this.pathTextBox.Text);
                         break;
                     case "DOWNLOAD":
@@ -302,24 +317,8 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
                 this.LogOutput("Received an error. " + ex.Message);
             }
         }
-        private async Task<string> GetSkyDriveFolderID(string folderName)
-        {
-            var client = LiveConnectClient;
 
-            LiveOperationResult operationResult = await client.GetAsync("me/skydrive/files?filter=folders");
-            var iEnum = operationResult.Result.Values.GetEnumerator();
-            iEnum.MoveNext();
-            var folders = iEnum.Current as IEnumerable;
 
-            foreach (dynamic v in folders)
-            {
-                if (v.name == folderName)
-                {
-                    return v.id as string;
-                }
-            }
-            return null;
-        }
         private async Task<LiveOperationResult> UploadFile(string path)
         {
             OpenFileDialog dialog = new OpenFileDialog();
@@ -336,11 +335,34 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
                 {
                     throw new Exception("Unable to open the file selected to upload.");
                 }
-
                 using (stream)
                 {
                     return await this.LiveConnectClient.UploadAsync(path, dialog.SafeFileName, stream, OverwriteOption.DoNotOverwrite);
                 }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        private async Task<SkyDriveClient.SkyDriveFileInfo> UploadFile2(string path)
+        {
+            OpenFileDialog dialog = new OpenFileDialog();
+            Stream stream = null;
+            dialog.RestoreDirectory = true;
+
+            if (dialog.ShowDialog() != DialogResult.OK)
+            {
+                throw new InvalidOperationException("No file is picked to upload.");
+            }
+            try
+            {
+                if ((stream = dialog.OpenFile()) == null)
+                {
+                    throw new Exception("Unable to open the file selected to upload.");
+                }
+
+                return await SkyDriveClient.UploadFileAsync(dialog.FileName, path);
             }
             catch (Exception ex)
             {
@@ -401,23 +423,36 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
             }
         }
 
-        Task IRefreshTokenHandler.SaveRefreshTokenAsync(RefreshTokenInfo tokenInfo)
+        private async void button2_Click(object sender, EventArgs e)
         {
-            // Note: 
-            // 1) In order to receive refresh token, wl.offline_access scope is needed.
-            // 2) Alternatively, we can persist the refresh token.
-            return Task.Factory.StartNew(() =>
+            try
             {
-                this.refreshTokenInfo = tokenInfo;
-            });
-        }
+//                var l = (await SkyDriveClient.GetSkyDriveItemsAsync()).ToList();
+//                var l = (await SkyDriveClient.GetSkyDriveFilesAsync()).ToList();
+//                var el = await SkyDriveClient.GetSharedEditLinkAsync(l[2].Id);
+//                var vl = await SkyDriveClient.GetSharedReadLinkAsync(l[2].Id);
+//                var embl = await SkyDriveClient.GetEmbedLinkAsync(l[2].Id);
+                if (string.IsNullOrWhiteSpace(this.pathTextBox.Text))
+                {
+                    var root = SkyDriveClient.RootFolder;
+                    this.pathTextBox.Text = root.Id;
+                }
+                var result = await this.UploadFile2(this.pathTextBox.Text);
+                if (result != null)
+                {
+                    this.LogOutput(string.Format("Id: {0}\r\nName: {1}\r\nLink: {2}\r\nSource: {3}", result.Id, result.Name, result.Link, result.Source));
 
-        Task<RefreshTokenInfo> IRefreshTokenHandler.RetrieveRefreshTokenAsync()
-        {
-            return Task.Factory.StartNew<RefreshTokenInfo>(() =>
+                    await SkyDriveClient.DownloadFileAsync(@"C:\temp\xxxx.xlsx", result.Id);
+                }
+            }
+            catch (AggregateException ex)
             {
-                return this.refreshTokenInfo;
-            });
+                this.LogOutput("Received an error. " + ex.InnerExceptions.Aggregate("", (res, err) => res += "\r\n" + err.InnerException.Message));
+            }
+            catch (Exception ex)
+            {
+                this.LogOutput("Received an error. " + ex.Message);
+            }
         }
 
     }

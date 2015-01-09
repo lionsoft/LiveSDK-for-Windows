@@ -20,6 +20,8 @@
 //  THE SOFTWARE.
 // ------------------------------------------------------------------------------
 
+using System;
+
 namespace Microsoft.Live
 {
     using System.Resources;
@@ -35,7 +37,14 @@ namespace Microsoft.Live
 
         public static string GetString(string name)
         {
-            return resourceManager.GetString(name);
+            try
+            {
+                return resourceManager.GetString(name);
+            }
+            catch
+            {
+                return name;
+            }
         }
     }
 }

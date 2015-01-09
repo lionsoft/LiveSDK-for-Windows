@@ -39,6 +39,7 @@ namespace Microsoft.Live
     {
         private readonly LiveAuthClient publicAuthClient;
         private readonly string clientId;
+        private readonly string clientSecret;
         private readonly IRefreshTokenHandler refreshTokenHandler;
         private LiveLoginResult loginStatus;
         private RefreshTokenInfo refreshTokenInfo;
@@ -51,6 +52,7 @@ namespace Microsoft.Live
         /// </summary>
         public LiveAuthClientCore(
             string clientId,
+            string clientSecret,
             IRefreshTokenHandler refreshTokenHandler,
             LiveAuthClient authClient)
         {
@@ -58,6 +60,7 @@ namespace Microsoft.Live
             Debug.Assert(authClient != null);
 
             this.clientId = clientId;
+            this.clientSecret = clientSecret;
             this.refreshTokenHandler = refreshTokenHandler;
             this.publicAuthClient = authClient;
         }
@@ -160,11 +163,11 @@ namespace Microsoft.Live
 
         private void RefreshToken(Action<LiveLoginResult> completionCallback)
         {
-            if (this.refreshTokenInfo != null)
+            if (this.refreshTokenInfo != null && this.refreshTokenInfo.RefreshToken != null)
             {
                 LiveAuthRequestUtility.RefreshTokenAsync(
                         this.clientId,
-                        null,
+                        this.clientSecret,
                         LiveAuthUtility.BuildDesktopRedirectUrl(),
                         this.refreshTokenInfo.RefreshToken,
                         null /*scopes*/
@@ -213,7 +216,7 @@ namespace Microsoft.Live
                     this.refreshTokenHandler.SaveRefreshTokenAsync(refreshInfo);
                 }
             }
-            else if (this.loginStatus.Status == LiveConnectSessionStatus.Unknown && 
+            else if (this.loginStatus == null || this.loginStatus.Status == LiveConnectSessionStatus.Unknown && 
                 result.Status == LiveConnectSessionStatus.NotConnected)
             {
                 this.loginStatus = result;
@@ -259,8 +262,8 @@ namespace Microsoft.Live
         private void ExchangeCodeForToken(string authorizationCode)
         {
             Task<LiveLoginResult> task = LiveAuthRequestUtility.ExchangeCodeForTokenAsync(
-                this.clientId, 
-                null, 
+                this.clientId,
+                this.clientSecret,
                 LiveAuthUtility.BuildDesktopRedirectUrl(), 
                 authorizationCode);
             task.ContinueWith((Task<LiveLoginResult> t) =>

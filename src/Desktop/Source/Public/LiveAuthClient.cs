@@ -44,24 +44,28 @@ namespace Microsoft.Live
         /// Initializes an instance of LiveAuthClient class.
         /// </summary>
         /// <param name="clientId">The client Id of the app.</param>
-        /// <param name="clientSecret">The client secret of the app.</param>
         public LiveAuthClient(string clientId)
             : this(clientId, null)
         {
+        }
+
+        public LiveAuthClient(string refreshToken, string clientId, string clientSecret)
+            : this(clientId, clientSecret, refreshToken == null ? null : new RefreshTokenHandler(refreshToken))
+        {
+            Session = new LiveConnectSession(this);
         }
 
         /// <summary>
         /// Initializes an instance of LiveAuthClient class.
         /// </summary>
         /// <param name="clientId">The client Id of the app.</param>
+        /// <param name="clientSecret">The client secret of the app.</param>
         /// <param name="refreshTokenHandler">An IRefreshTokenHandler instance to handle refresh token persistency and retrieval.</param>
-        public LiveAuthClient(
-            string clientId,
-            IRefreshTokenHandler refreshTokenHandler)
+        public LiveAuthClient(string clientId, string clientSecret, IRefreshTokenHandler refreshTokenHandler = null)
         {
             LiveUtility.ValidateNotNullOrWhiteSpaceString(clientId, "clientId");
 
-            this.authClient = new LiveAuthClientCore(clientId, refreshTokenHandler, this);
+            this.authClient = new LiveAuthClientCore(clientId, clientSecret, refreshTokenHandler ?? new RefreshTokenHandler(), this);
             this.syncContext = SynchronizationContextWrapper.Current;
         }
 

@@ -73,15 +73,30 @@ namespace Microsoft.Live
         /// <summary>
         /// Creates a new LiveConnectClient instance.
         /// </summary>
-        /// <param name="accessToken">Access token</param>
-        public LiveConnectClient(string accessToken)
+        public LiveConnectClient(string accessToken, DateTime? expiresAt = null, string clientId = null, string clientSecret = null, string refreshToken = null, string[] scopes = null)
             : this(new LiveConnectSession
             {
                 AccessToken = accessToken, 
-                Scopes = new string[0],
+                Expires = (expiresAt ?? DateTime.Now),
+                RefreshToken = refreshToken,
+                Scopes = scopes ?? new string[0],
             })
         {
+            Session.AuthClient = clientId != null ? new LiveAuthClient(refreshToken, clientId, clientSecret) : null;
         }
+
+        /// <summary>
+        /// Creates a new LiveConnectClient instance.
+        /// </summary>
+        public LiveConnectClient(LiveAuthClient authClient) : this(authClient.Session)
+        {
+        }
+
+        public LiveConnectClient(string refreshToken, string clientId, string clientSecret = null) : this(new LiveAuthClient(refreshToken, clientId, clientSecret))
+        {
+        }
+
+
 
         #endregion
 

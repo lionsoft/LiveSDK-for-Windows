@@ -74,6 +74,7 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
             this.outputTextBox = new System.Windows.Forms.TextBox();
             this.button1 = new System.Windows.Forms.Button();
             this.textToken = new System.Windows.Forms.TextBox();
+            this.button2 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.mePictureBox)).BeginInit();
             this.groupBox1.SuspendLayout();
             this.connectGroupBox.SuspendLayout();
@@ -277,6 +278,7 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
             // 
             // connectGroupBox
             // 
+            this.connectGroupBox.Controls.Add(this.button2);
             this.connectGroupBox.Controls.Add(this.clearOutputButton);
             this.connectGroupBox.Controls.Add(this.outputTextBox);
             this.connectGroupBox.Controls.Add(this.label1);
@@ -322,7 +324,7 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(167, 23);
             this.button1.TabIndex = 19;
-            this.button1.Text = "Sign in with Token";
+            this.button1.Text = "Sign in with Refresh Token";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
@@ -335,6 +337,16 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
             this.textToken.Size = new System.Drawing.Size(168, 90);
             this.textToken.TabIndex = 20;
             this.textToken.Text = resources.GetString("textToken.Text");
+            // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(170, 146);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(82, 23);
+            this.button2.TabIndex = 19;
+            this.button2.Text = "Upload";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
             // MainForm
             // 
@@ -387,6 +399,7 @@ namespace Microsoft.Live.Desktop.Samples.ApiExplorer
         private System.Windows.Forms.TextBox currentScopeTextBox;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.TextBox textToken;
+        private System.Windows.Forms.Button button2;
     }
 }
 
